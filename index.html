@@ -22,16 +22,16 @@
     <button id="playBtn">▶ Play</button>
     <audio id="player" controls></audio>
 
-    <div class="muted" id="note">
+    <div class="muted">
       If it doesn’t auto-play, tap Play once (mobile autoplay policy).
     </div>
   </div>
 
 <script>
-(function () {
+(() => {
   const qs = new URLSearchParams(location.search);
   const word = (qs.get("word") || "").trim();
-  const lang = (qs.get("lang") || "en-US").trim(); // change default if you want
+  const lang = (qs.get("lang") || "en-US").trim();
 
   const wEl = document.getElementById("w");
   const player = document.getElementById("player");
@@ -45,7 +45,7 @@
 
   wEl.textContent = word;
 
-  // Reliable endpoint commonly used for simple TTS playback
+  // Simple TTS stream
   const ttsUrl =
     "https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=" +
     encodeURIComponent(lang) +
@@ -55,17 +55,21 @@
   player.src = ttsUrl;
 
   async function tryPlay() {
-    try {
-      await player.play();
-    } catch (e) {
-      // Autoplay blocked: user must tap Play
-    }
+    try { await player.play(); } catch (e) {}
   }
 
   playBtn.addEventListener("click", tryPlay);
 
-  // Attempt autoplay on load
+  // attempt autoplay
   tryPlay();
+
+  // Optional: go back after audio ends (comment out if you don't want it)
+  player.addEventListener("ended", () => {
+    setTimeout(() => {
+      // works nicely when opened as a new tab from Sheets
+      if (history.length > 1) history.back();
+    }, 400);
+  });
 })();
 </script>
 </body>
