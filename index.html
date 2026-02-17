@@ -8,7 +8,7 @@
     body{font-family:system-ui;margin:0;display:grid;place-items:center;min-height:100vh;padding:20px}
     .card{max-width:560px;width:100%;border:1px solid #ddd;border-radius:14px;padding:18px}
     .top{display:flex;gap:10px;align-items:center;justify-content:space-between}
-    .word{font-size:30px;font-weight:800;margin:10px 0 12px;word-break:break-word}
+    .word{font-size:32px;font-weight:900;margin:10px 0 14px;word-break:break-word}
     button, select{padding:10px 12px;border-radius:10px;border:1px solid #ccc;background:#fff;font-weight:700}
     button{cursor:pointer}
     .muted{opacity:.75;font-size:12px;margin-top:10px;line-height:1.4}
@@ -18,7 +18,7 @@
 <body>
   <div class="card">
     <div class="top">
-      <div style="font-weight:800">Pronunciation</div>
+      <div style="font-weight:900">Pronunciation</div>
       <select id="voiceSel" title="Voice"></select>
     </div>
 
@@ -27,6 +27,7 @@
     <div class="row">
       <button id="speakBtn">▶ Speak</button>
       <button id="repeatBtn">↻ Repeat x2</button>
+      <button id="stopBtn">■ Stop</button>
     </div>
 
     <div class="muted" id="msg"></div>
@@ -42,34 +43,34 @@
   const msg = document.getElementById("msg");
   const speakBtn = document.getElementById("speakBtn");
   const repeatBtn = document.getElementById("repeatBtn");
+  const stopBtn = document.getElementById("stopBtn");
   const voiceSel = document.getElementById("voiceSel");
+
+  if (!("speechSynthesis" in window)) {
+    wEl.textContent = "Speech not supported";
+    msg.textContent = "Use Chrome / Edge / Safari (most phones support it).";
+    speakBtn.disabled = repeatBtn.disabled = stopBtn.disabled = true;
+    return;
+  }
 
   if (!word) {
     wEl.textContent = "No word provided";
-    speakBtn.disabled = true;
-    repeatBtn.disabled = true;
-    msg.textContent = "Open with ?word=YOURWORD (e.g. ?word=test&lang=en-US).";
+    msg.textContent = "Open with ?word=test&lang=en-US (your sheet will generate this).";
+    speakBtn.disabled = repeatBtn.disabled = stopBtn.disabled = true;
     return;
   }
 
   wEl.textContent = word;
 
   function loadVoices() {
-    if (!("speechSynthesis" in window)) {
-      msg.textContent = "Speech not supported in this browser.";
-      speakBtn.disabled = true;
-      repeatBtn.disabled = true;
-      return;
-    }
-
     const voices = speechSynthesis.getVoices() || [];
     voiceSel.innerHTML = "";
 
-    // Filter by language first; fallback to all voices
-    const preferred = voices.filter(v => (v.lang || "").toLowerCase().startsWith(lang.toLowerCase().split("-")[0]));
+    const base = lang.toLowerCase().split("-")[0];
+    const preferred = voices.filter(v => (v.lang || "").toLowerCase().startsWith(base));
     const list = preferred.length ? preferred : voices;
 
-    list.forEach((v, i) => {
+    list.forEach(v => {
       const opt = document.createElement("option");
       opt.value = v.name;
       opt.textContent = `${v.name} (${v.lang})`;
@@ -77,19 +78,16 @@
     });
 
     msg.textContent = preferred.length
-      ? `Using voices matching ${lang}. Tap Speak.`
+      ? `Voice set for ${lang}. Tap Speak.`
       : `No matching voice for ${lang}; showing all voices.`;
   }
 
-  function speak(times = 1) {
-    if (!("speechSynthesis" in window)) return;
+  function speak(times=1) {
     speechSynthesis.cancel();
-
     const voices = speechSynthesis.getVoices() || [];
-    const chosenName = voiceSel.value;
-    const chosen = voices.find(v => v.name === chosenName);
+    const chosen = voices.find(v => v.name === voiceSel.value);
 
-    for (let i = 0; i < times; i++) {
+    for (let i=0; i<times; i++) {
       const u = new SpeechSynthesisUtterance(word);
       u.lang = lang;
       if (chosen) u.voice = chosen;
@@ -99,14 +97,12 @@
 
   speakBtn.addEventListener("click", () => speak(1));
   repeatBtn.addEventListener("click", () => speak(2));
+  stopBtn.addEventListener("click", () => speechSynthesis.cancel());
 
-  // Voices load asynchronously in Chrome
   loadVoices();
-  if ("speechSynthesis" in window) {
-    speechSynthesis.onvoiceschanged = loadVoices;
-  }
+  speechSynthesis.onvoiceschanged = loadVoices;
 
-  // Try a gentle auto-speak (some phones require a tap anyway)
+  // try auto-speak (some phones require user tap — that's normal)
   setTimeout(() => speak(1), 250);
 })();
 </script>
