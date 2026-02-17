@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pronounce</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:0;display:grid;place-items:center;min-height:100vh;padding:20px}
+    .card{max-width:520px;width:100%;border:1px solid #ddd;border-radius:14px;padding:18px}
+    h1{font-size:18px;margin:0 0 8px}
+    .word{font-size:28px;font-weight:800;margin:6px 0 14px;word-break:break-word}
+    button{padding:10px 12px;border-radius:10px;border:1px solid #ccc;background:#fff;font-weight:700;cursor:pointer}
+    .muted{opacity:.75;font-size:12px;margin-top:10px;line-height:1.4}
+    audio{width:100%; margin-top:12px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Pronunciation</h1>
+    <div class="word" id="w">—</div>
+
+    <button id="playBtn">▶ Play</button>
+    <audio id="player" controls></audio>
+
+    <div class="muted" id="note">
+      If it doesn’t auto-play, tap Play once (mobile autoplay policy).
+    </div>
+  </div>
+
+<script>
+(function () {
+  const qs = new URLSearchParams(location.search);
+  const word = (qs.get("word") || "").trim();
+  const lang = (qs.get("lang") || "en-US").trim(); // change default if you want
+
+  const wEl = document.getElementById("w");
+  const player = document.getElementById("player");
+  const playBtn = document.getElementById("playBtn");
+
+  if (!word) {
+    wEl.textContent = "No word provided";
+    playBtn.disabled = true;
+    return;
+  }
+
+  wEl.textContent = word;
+
+  // Reliable endpoint commonly used for simple TTS playback
+  const ttsUrl =
+    "https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=" +
+    encodeURIComponent(lang) +
+    "&q=" +
+    encodeURIComponent(word);
+
+  player.src = ttsUrl;
+
+  async function tryPlay() {
+    try {
+      await player.play();
+    } catch (e) {
+      // Autoplay blocked: user must tap Play
+    }
+  }
+
+  playBtn.addEventListener("click", tryPlay);
+
+  // Attempt autoplay on load
+  tryPlay();
+})();
+</script>
+</body>
+</html>
